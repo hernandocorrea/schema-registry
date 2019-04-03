@@ -1,9 +1,8 @@
 package consumer
 
-import monix.eval.Task
 import monix.execution.Scheduler
 import monix.kafka.{KafkaConsumerConfig, KafkaConsumerObservable}
-import monix.reactive.{Consumer, Observable}
+import monix.reactive.Consumer
 
 object Main extends App {
 
@@ -15,23 +14,19 @@ object Main extends App {
     // you can use this settings for At Most Once semantics:
     // observableCommitOrder = ObservableCommitOrder.BeforeAck
   )
-  
+
   implicit val scheduler: Scheduler = Scheduler.global
 
-
-  val observable =
     KafkaConsumerObservable[String,String](consumerCfg, List("my-topic"))
       .consumeWith(Consumer.foreach(
         x =>{
-          println("consumed")
+          println("consuming")
           println(x.value())
         }
       )).runAsyncAndForget
 
-  println("size")
-  KafkaConsumerObservable[String,String](consumerCfg, List("my-topic"))
-      .toListL.map(l => println(l.size)).runAsyncAndForget
 
-  Thread.sleep(100000)
+
+  while(true)()
 
 }
