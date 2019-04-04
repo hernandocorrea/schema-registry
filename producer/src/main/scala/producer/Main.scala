@@ -1,36 +1,50 @@
 package producer
 
-import monix.eval.Task
+import co.s4n.dto.User
 import monix.execution.Scheduler
-import monix.kafka.{KafkaProducer, KafkaProducerConfig}
+import monix.kafka.{KafkaProducer, KafkaProducerConfig, Serializer}
+import co.s4n.serializer.KafkaSerializer
+
+import scala.language.postfixOps
 
 object Main extends App {
 
+  val topic = "user-topic"
+
   println("producer !!!!")
 
+  val serCfg: Map[String, String] = Map("schema.registry.url" -> "http://localhost:8081")
+
   implicit val scheduler: Scheduler = Scheduler.global
+  implicit val serializer:Serializer[User] = KafkaSerializer.serializer(serCfg, isKey = false)
 
-  // Init
-  val producerCfg = KafkaProducerConfig.default.copy(
-    bootstrapServers = List("127.0.0.1:9092")
-  )
+  val producerCfg = KafkaProducerConfig.default
+  val producer = KafkaProducer[String, User](producerCfg, scheduler)
 
-  val producer = KafkaProducer[String,String](producerCfg, scheduler)
+  val user = User("hernando correa lazo 121", 15)
 
-
-  val messagesTask = Task.sequence{(1 to 10).map{
-    x => producer.send("my-topic", s"my-message-DDDDDDDDDDDDDD-$x")
-  }}
-
-  // For sending one message
   (for{
-    _ <- messagesTask
+    result <- producer.send(topic, user)
     _ <- producer.close()
-  } yield ()).runAsyncAndForget
+  } yield {
+    result match {
+      case Some(recordMetadata) =>
+        println("Message sent")
+        println("key size " + recordMetadata.serializedKeySize())
+        println("value size " + recordMetadata.serializedValueSize())
+        println("has offset " + recordMetadata.hasOffset)
+        println("partition " + recordMetadata.partition())
+        println("timestamp " + recordMetadata.timestamp())
+        println("offset " + recordMetadata.offset())
+        println("topic " + recordMetadata.topic())
+      case None => println("Error sending message")
+    }
+  }).runAsyncAndForget
 
-  // For closing the producer connection
-  Thread.sleep(10000)
+  Thread.sleep(1000)
 
-  println("closeeee !!!")
+  println("Finish !!!")
 
 }
+
+
