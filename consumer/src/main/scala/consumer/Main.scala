@@ -1,37 +1,33 @@
 package consumer
 
+import co.s4n.configuration.Configuration
 import co.s4n.dto.User
 import co.s4n.serializer.KafkaSerializer
 import monix.execution.Scheduler
-import monix.kafka.{Deserializer, KafkaConsumerConfig, KafkaConsumerObservable}
+import monix.kafka.{Deserializer, KafkaConsumerObservable}
 import monix.reactive.Consumer
 
 object Main extends App {
 
-  println("consumer")
-
-  val serCfg: Map[String, String] = Map("schema.registry.url" -> "http://localhost:8081")
+  val config = Configuration
+  val serCfg: Map[String, String] = Map("schema.registry.url" -> config.schemaRegistryConf.toString)
+  implicit val scheduler: Scheduler = Scheduler.global
   implicit val deserializer: Deserializer[User] = KafkaSerializer.deserializer()
 
-  val consumerCfg = KafkaConsumerConfig.default.copy(
-    bootstrapServers = List("127.0.0.1:9092"),
-    groupId = "kafka-tests"
-  )
+  val kafkaConsumerConfig = config.kafkaConsumerConfig
 
-  implicit val scheduler: Scheduler = Scheduler.global
-
-    KafkaConsumerObservable[String, User](consumerCfg, List("user-topic"))
-      .consumeWith(Consumer.foreach(
-        x =>{
-          println("consuming")
-          val user = x.value()
-          println(user.name)
-          println(user.age)
-        }
-      )).runAsyncAndForget
+  println("Start consuming ...")
+  KafkaConsumerObservable[String, User](kafkaConsumerConfig, List("user-topic"))
+    .consumeWith(Consumer.foreach(
+      x =>{
+        println("consuming")
+        val user = x.value()
+        println(s"User name => ${user.name}")
+      }
+    )).runAsyncAndForget
 
   //while(true)()
 
   Thread.sleep(100000)
-
+  System.exit(0)
 }

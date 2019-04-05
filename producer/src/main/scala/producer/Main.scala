@@ -1,33 +1,33 @@
 package producer
 
+import co.s4n.configuration.Configuration
 import co.s4n.dto.User
 import monix.execution.Scheduler
-import monix.kafka.{KafkaProducer, KafkaProducerConfig, Serializer}
+import monix.kafka.{KafkaProducer, Serializer}
 import co.s4n.serializer.KafkaSerializer
 
 object Main extends App {
 
-  val topic = "user-topic"
-
-  println("producer !!!!")
-
-  val serCfg: Map[String, String] = Map("schema.registry.url" -> "http://localhost:8081")
+  val config = Configuration
+  val serCfg: Map[String, String] = Map("schema.registry.url" -> config.schemaRegistryConf.toString)
 
   implicit val scheduler: Scheduler = Scheduler.global
   implicit val serializer:Serializer[User] = KafkaSerializer.serializer()
 
-  val producerCfg = KafkaProducerConfig.default
-  val producer = KafkaProducer[String, User](producerCfg, scheduler)
+  val kafkaProducerConfig = config.kafkaProducerConfig
+  val producer = KafkaProducer[String, User](kafkaProducerConfig, scheduler)
 
-  val user = User("hernando correa lazo 123456", 15)
+  val topic = config.topic
+  val user = User("hernando correa lazo 3", 30)
 
+  println("Start producing ...")
   (for{
     result <- producer.send(topic, user)
     _ <- producer.close()
   } yield {
     result match {
       case Some(recordMetadata) =>
-        println("Message sent")
+        println("Message sent => " + user.name)
         println("offset " + recordMetadata.offset())
       case None => println("Error sending message")
     }
@@ -38,5 +38,3 @@ object Main extends App {
   println("Finish !!!")
 
 }
-
-
