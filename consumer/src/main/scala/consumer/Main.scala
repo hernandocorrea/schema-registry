@@ -3,7 +3,7 @@ package consumer
 import co.s4n.dto.User
 import co.s4n.serializer.KafkaSerializer
 import monix.execution.Scheduler
-import monix.kafka.{Deserializer, KafkaConsumerConfig, KafkaConsumerObservable, Serializer}
+import monix.kafka.{Deserializer, KafkaConsumerConfig, KafkaConsumerObservable}
 import monix.reactive.Consumer
 
 object Main extends App {
@@ -11,7 +11,7 @@ object Main extends App {
   println("consumer")
 
   val serCfg: Map[String, String] = Map("schema.registry.url" -> "http://localhost:8081")
-  implicit val deserializer: Deserializer[User] = KafkaSerializer.deserializer(serCfg, false)
+  implicit val deserializer: Deserializer[User] = KafkaSerializer.deserializer()
 
   val consumerCfg = KafkaConsumerConfig.default.copy(
     bootstrapServers = List("127.0.0.1:9092"),

@@ -5,8 +5,6 @@ import monix.execution.Scheduler
 import monix.kafka.{KafkaProducer, KafkaProducerConfig, Serializer}
 import co.s4n.serializer.KafkaSerializer
 
-import scala.language.postfixOps
-
 object Main extends App {
 
   val topic = "user-topic"
@@ -16,12 +14,12 @@ object Main extends App {
   val serCfg: Map[String, String] = Map("schema.registry.url" -> "http://localhost:8081")
 
   implicit val scheduler: Scheduler = Scheduler.global
-  implicit val serializer:Serializer[User] = KafkaSerializer.serializer(serCfg, isKey = false)
+  implicit val serializer:Serializer[User] = KafkaSerializer.serializer()
 
   val producerCfg = KafkaProducerConfig.default
   val producer = KafkaProducer[String, User](producerCfg, scheduler)
 
-  val user = User("hernando correa lazo 121", 15)
+  val user = User("hernando correa lazo 123456", 15)
 
   (for{
     result <- producer.send(topic, user)
@@ -30,13 +28,7 @@ object Main extends App {
     result match {
       case Some(recordMetadata) =>
         println("Message sent")
-        println("key size " + recordMetadata.serializedKeySize())
-        println("value size " + recordMetadata.serializedValueSize())
-        println("has offset " + recordMetadata.hasOffset)
-        println("partition " + recordMetadata.partition())
-        println("timestamp " + recordMetadata.timestamp())
         println("offset " + recordMetadata.offset())
-        println("topic " + recordMetadata.topic())
       case None => println("Error sending message")
     }
   }).runAsyncAndForget
