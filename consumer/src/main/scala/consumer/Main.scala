@@ -2,7 +2,7 @@ package consumer
 
 import co.s4n.configuration.Configuration
 import co.s4n.dto.User
-import co.s4n.serializer.KafkaSerializer
+import co.s4n.serializer.AvroSerializer
 import monix.execution.Scheduler
 import monix.kafka.{Deserializer, KafkaConsumerObservable}
 import monix.reactive.Consumer
@@ -10,24 +10,20 @@ import monix.reactive.Consumer
 object Main extends App {
 
   val config = Configuration
-  val serCfg: Map[String, String] = Map("schema.registry.url" -> config.schemaRegistryConf.toString)
   implicit val scheduler: Scheduler = Scheduler.global
-  implicit val deserializer: Deserializer[User] = KafkaSerializer.deserializer()
+  implicit val deserializer: Deserializer[Object] = AvroSerializer.deserializer(config.schemaRegistryConf, isKey = false)
 
   val kafkaConsumerConfig = config.kafkaConsumerConfig
 
   println("Start consuming ...")
-  KafkaConsumerObservable[String, User](kafkaConsumerConfig, List("user-topic"))
+  KafkaConsumerObservable[String, Object](kafkaConsumerConfig, List("user-topic"))
     .consumeWith(Consumer.foreach(
-      x =>{
-        println("consuming")
-        val user = x.value()
-        println(s"User name => ${user.name}")
+      record => record.value() match {
+        case user: User =>
+          println("Consuming user")
+          println(user)
       }
     )).runAsyncAndForget
 
-  //while(true)()
-
-  Thread.sleep(100000)
-  System.exit(0)
+  while(true)()
 }

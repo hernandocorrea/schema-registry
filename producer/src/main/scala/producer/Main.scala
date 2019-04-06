@@ -2,39 +2,33 @@ package producer
 
 import co.s4n.configuration.Configuration
 import co.s4n.dto.User
+import co.s4n.serializer.AvroSerializer
+import com.sksamuel.avro4s.{Record, RecordFormat}
 import monix.execution.Scheduler
 import monix.kafka.{KafkaProducer, Serializer}
-import co.s4n.serializer.KafkaSerializer
 
 object Main extends App {
 
   val config = Configuration
-  val serCfg: Map[String, String] = Map("schema.registry.url" -> config.schemaRegistryConf.toString)
 
   implicit val scheduler: Scheduler = Scheduler.global
-  implicit val serializer:Serializer[User] = KafkaSerializer.serializer()
+  implicit val serializer: Serializer[Object] = AvroSerializer.serializer(config.schemaRegistryConf, isKey = false)
 
-  val kafkaProducerConfig = config.kafkaProducerConfig
-  val producer = KafkaProducer[String, User](kafkaProducerConfig, scheduler)
+  val format = RecordFormat[User]
+  val recordVal: Record = format.to(User("Hernando Correa", 0))
 
-  val topic = config.topic
-  val user = User("hernando correa lazo 3", 30)
+  val producer = KafkaProducer[String, Object](config.kafkaProducerConfig, scheduler)
 
-  println("Start producing ...")
   (for{
-    result <- producer.send(topic, user)
+    result <- producer.send(config.topic, recordVal)
     _ <- producer.close()
   } yield {
-    result match {
+    result match{
       case Some(recordMetadata) =>
-        println("Message sent => " + user.name)
-        println("offset " + recordMetadata.offset())
+        println("Message sent")
+        println("offset => " + recordMetadata.offset())
       case None => println("Error sending message")
     }
   }).runAsyncAndForget
-
-  Thread.sleep(1000)
-
-  println("Finish !!!")
 
 }

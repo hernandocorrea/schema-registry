@@ -1,6 +1,7 @@
 package co.s4n.configuration
 
 import com.typesafe.config.{Config, ConfigFactory}
+import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
 import net.ceedubs.ficus.Ficus._
 import monix.kafka.{KafkaConsumerConfig, KafkaProducerConfig}
 import pureconfig.loadConfig
@@ -15,8 +16,11 @@ object Configuration {
 
   val topic: String = loadConfig[String](config,s"$namespace.kafka.topic").fold(_ =>throw new Exception, identity)
 
-  val schemaRegistryConf: SchemaRegistryConfig = loadConfig[SchemaRegistryConfig](config, s"$namespace.schema-registry")
-    .fold(_ =>throw new Exception, identity)
+  val schemaRegistryConf: Map[String, String] = {
+    val schemaConfig = loadConfig[SchemaRegistryConfig](config, s"$namespace.schema-registry")
+      .fold(_ =>throw new Exception, identity)
+    Map(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG -> schemaConfig.toString)
+  }
 
   val kafkaProducerConfig: KafkaProducerConfig = KafkaProducerConfig.apply(config.as[Config](s"$namespace.kafka.producer.kafka-clients"))
 

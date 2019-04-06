@@ -9,9 +9,7 @@ class ConfigurationTest  extends FlatSpec with Matchers {
 
     Configuration.topic shouldBe "user-topic"
 
-    Configuration.schemaRegistryConf.host shouldBe "http://localhost"
-    Configuration.schemaRegistryConf.port shouldBe 8081
-    Configuration.schemaRegistryConf.toString shouldBe "http://localhost:8081"
+    Configuration.schemaRegistryConf shouldBe Map("schema.registry.url" -> "http://localhost:8081")
 
     Configuration.kafkaProducerConfig.bootstrapServers shouldBe List("127.0.0.1:9092")
 
