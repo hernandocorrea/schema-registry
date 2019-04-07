@@ -3,9 +3,11 @@ package consumer
 import co.s4n.configuration.Configuration
 import co.s4n.dto.User
 import co.s4n.serializer.AvroSerializer
+import com.sksamuel.avro4s.RecordFormat
 import monix.execution.Scheduler
 import monix.kafka.{Deserializer, KafkaConsumerObservable}
 import monix.reactive.Consumer
+import org.apache.avro.generic.GenericData.Record
 
 object Main extends App {
 
@@ -16,14 +18,18 @@ object Main extends App {
   val kafkaConsumerConfig = config.kafkaConsumerConfig
 
   println("Start consuming ...")
-  KafkaConsumerObservable[String, Object](kafkaConsumerConfig, List("user-topic"))
+  println(s"Topic => ${config.topic}")
+  KafkaConsumerObservable[String, Object](kafkaConsumerConfig, List(config.topic))
     .consumeWith(Consumer.foreach(
       record => record.value() match {
-        case user: User =>
-          println("Consuming user")
-          println(user)
-      }
+      case r: Record =>
+        val format = RecordFormat[User]
+        val user = format.from(r)
+        println("**************")
+        println(user)
+      case _ => println("Fail cast object")
+    }
     )).runAsyncAndForget
 
-  while(true)()
+  Thread.sleep(10000)
 }

@@ -1,7 +1,7 @@
 package co.s4n.dto
 
-case class User(name: String, age: Int){
+case class User(name: String){
 
-  override def toString: String = s"Name => $name, Age => $age"
+  override def toString: String = s"Name => $name"
 
 }
